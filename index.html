@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -23,8 +22,11 @@
     <h2>🌐 1₿illion Coin Token Transfer (Bitkub Chain)</h2>
 
     <div id="wallet-info"></div>
-    <button onclick="connectWallet()">🔗 Connect Wallet (Metamask / BitkubNext / WalletConnect)</button>
+    <button onclick="connectWallet()">🔗 Connect Wallet</button>
     <button onclick="logout()">Logout</button>
+
+    <div><b>💰 Token Balance:</b> <span id="balance">-</span></div>
+    <div><b>📈 1₿illion Coin Price:</b> <span id="price">Loading...</span></div>
 
     <h3>📤 Send Token</h3>
     <input type="text" id="to" placeholder="Recipient address" size="50" />
@@ -52,7 +54,6 @@
 const tokenAddress = "0x4dc6f1fa9fd93f28d9b3b37592c572ba18bf6f10";
 const tokenDecimals = 8;
 const providerOptions = {};
-
 let web3Modal = new window.Web3Modal.default({ cacheProvider: true, providerOptions });
 let provider, signer, userAddress;
 
@@ -62,9 +63,11 @@ async function connectWallet() {
     provider = new ethers.providers.Web3Provider(instance);
     signer = provider.getSigner();
     userAddress = await signer.getAddress();
+
     document.getElementById("wallet-info").innerText = "Connected: " + userAddress;
     document.getElementById("my-address").innerHTML = "Your address: " + userAddress;
     generateQR(userAddress);
+    getBalance();
   } catch (err) {
     alert("Connection failed: " + err.message);
   }
@@ -91,6 +94,7 @@ async function sendToken() {
   const to = document.getElementById("to").value;
   const amount = document.getElementById("amount").value;
   if (!ethers.utils.isAddress(to)) return alert("Invalid recipient address");
+
   const contract = new ethers.Contract(tokenAddress, [
     "function transfer(address to, uint256 amount) public returns (bool)"
   ], signer);
@@ -101,6 +105,7 @@ async function sendToken() {
 
   document.getElementById("receipt").innerText = JSON.stringify(receipt, null, 2);
   saveHistory(to, amount, receipt.transactionHash);
+  getBalance(); // อัปเดตยอดหลังโอน
 }
 
 function saveHistory(to, amount, tx) {
@@ -121,6 +126,27 @@ function loadHistory() {
   }
 }
 
+async function getBalance() {
+  const contract = new ethers.Contract(tokenAddress, [
+    "function balanceOf(address account) public view returns (uint256)"
+  ], provider);
+  const raw = await contract.balanceOf(userAddress);
+  const formatted = ethers.utils.formatUnits(raw, tokenDecimals);
+  document.getElementById("balance").innerText = parseFloat(formatted).toFixed(8) + " 1₿illion";
+}
+
+async function fetchPrice() {
+  try {
+    const res = await fetch("https://api.geckoterminal.com/api/v2/networks/bitkub_chain/pools/0xf42d65b190bb78fb8ead8a92110b653722f96048");
+    const data = await res.json();
+    const price = parseFloat(data.data.attributes.base_token_price_usd || 0).toFixed(8);
+    document.getElementById("price").innerText = "$" + price + " USD";
+  } catch (e) {
+    document.getElementById("price").innerText = "Unavailable";
+  }
+}
+
+fetchPrice();
 loadHistory();
 </script>
 </body>
