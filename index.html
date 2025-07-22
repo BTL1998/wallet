@@ -87,8 +87,49 @@ function showSection(id) {
   document.getElementById('tab-' + id).classList.add('active');
 }
 
+async function switchToBitkubChain() {
+  const BITKUB_PARAMS = {
+    chainId: '0x38f', // 911
+    chainName: 'Bitkub Chain',
+    nativeCurrency: {
+      name: 'Bitkub Coin',
+      symbol: 'KUB',
+      decimals: 18
+    },
+    rpcUrls: ['https://rpc.bitkubchain.io'],
+    blockExplorerUrls: ['https://www.bkcscan.com']
+  };
+
+  if (!window.ethereum) {
+    alert("MetaMask is not installed.");
+    return;
+  }
+
+  try {
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: BITKUB_PARAMS.chainId }],
+    });
+  } catch (switchError) {
+    if (switchError.code === 4902) {
+      try {
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [BITKUB_PARAMS],
+        });
+      } catch (addError) {
+        alert("Failed to add Bitkub Chain: " + addError.message);
+      }
+    } else {
+      alert("Failed to switch network: " + switchError.message);
+    }
+  }
+}
+
 async function connectWallet() {
   try {
+    await switchToBitkubChain();
+
     const instance = await web3Modal.connect();
     provider = new ethers.providers.Web3Provider(instance);
     signer = provider.getSigner();
@@ -140,7 +181,7 @@ async function sendToken() {
 
 function saveHistory(to, amount, tx) {
   const time = new Date().toLocaleString();
-  const row = `<tr><td>${time}</td><td>${to}</td><td>${amount}</td><td><a href="https://www.kubscan.com/tx/${tx}" target="_blank">View</a></td></tr>`;
+  const row = `<tr><td>${time}</td><td>${to}</td><td>${amount}</td><td><a href="https://www.bkcscan.com/tx/${tx}" target="_blank">View</a></td></tr>`;
   document.getElementById("history").innerHTML += row;
 
   let data = JSON.parse(localStorage.getItem("txhistory") || "[]");
@@ -151,7 +192,7 @@ function saveHistory(to, amount, tx) {
 function loadHistory() {
   let data = JSON.parse(localStorage.getItem("txhistory") || "[]");
   for (const item of data) {
-    const row = `<tr><td>${item.time}</td><td>${item.to}</td><td>${item.amount}</td><td><a href="https://www.kubscan.com/tx/${item.tx}" target="_blank">View</a></td></tr>`;
+    const row = `<tr><td>${item.time}</td><td>${item.to}</td><td>${item.amount}</td><td><a href="https://www.bkcscan.com/tx/${item.tx}" target="_blank">View</a></td></tr>`;
     document.getElementById("history").innerHTML += row;
   }
 }
