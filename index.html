@@ -174,7 +174,7 @@ async function getBalance() {
   ], provider);
   const raw = await contract.balanceOf(userAddress);
   const formatted = ethers.utils.formatUnits(raw, tokenDecimals);
-  document.getElementById("balance").innerText = parseFloat(formatted).toFixed(8) + " 1₿illion";
+  document.getElementById("balance").innerText = parseFloat(formatted).toFixed(8) + " ₿";
 }
 
 async function fetchPrice() {
